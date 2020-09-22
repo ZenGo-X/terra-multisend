@@ -258,7 +258,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "terra-echo"
+name = "terra-multisend"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-schema",

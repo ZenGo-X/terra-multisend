@@ -9,9 +9,16 @@ pub struct InitMsg {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Payment {
+    pub recipient: HumanAddr,
+    pub amount: Coin,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum HandleMsg {
     Echo { recipient: HumanAddr },
+    MultiSend { payments: Vec<Payment> },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

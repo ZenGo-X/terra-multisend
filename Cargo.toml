@@ -1,5 +1,5 @@
 [package]
-name = "terra-echo"
+name = "terra-multisend"
 version = "0.1.0"
 authors = ["amanusk <amanusk@kzencorp.com>"]
 edition = "2018"

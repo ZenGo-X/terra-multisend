@@ -27,7 +27,7 @@ export async function main() {
   // Create Contract code
   const storeCode = new MsgStoreCode(
     wallet.key.accAddress,
-    fs.readFileSync('../artifacts/terra_echo.wasm').toString('base64'),
+    fs.readFileSync('../artifacts/terra_multisend.wasm').toString('base64'),
   );
 
   const storeCodeTx = await wallet.createAndSignTx({
