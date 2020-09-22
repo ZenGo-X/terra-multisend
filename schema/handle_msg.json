@@ -5,17 +5,6 @@
     {
       "type": "object",
       "required": [
-        "increment"
-      ],
-      "properties": {
-        "increment": {
-          "type": "object"
-        }
-      }
-    },
-    {
-      "type": "object",
-      "required": [
         "echo"
       ],
       "properties": {
@@ -27,26 +16,6 @@
           "properties": {
             "recipient": {
               "$ref": "#/definitions/HumanAddr"
-            }
-          }
-        }
-      }
-    },
-    {
-      "type": "object",
-      "required": [
-        "reset"
-      ],
-      "properties": {
-        "reset": {
-          "type": "object",
-          "required": [
-            "count"
-          ],
-          "properties": {
-            "count": {
-              "type": "integer",
-              "format": "int32"
             }
           }
         }

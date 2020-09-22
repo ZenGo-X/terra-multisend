@@ -3,7 +3,7 @@ use cosmwasm_std::{
     InitResponse, Querier, StdError, StdResult, Storage,
 };
 
-use crate::msg::{CountResponse, HandleMsg, InitMsg, QueryMsg};
+use crate::msg::{FeeResponse, HandleMsg, InitMsg, QueryMsg};
 use crate::state::{config, config_read, State};
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
@@ -12,7 +12,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
     let state = State {
-        count: msg.count,
+        fee: msg.fee,
         owner: deps.api.canonical_address(&env.message.sender)?,
     };
 
@@ -27,22 +27,8 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     msg: HandleMsg,
 ) -> StdResult<HandleResponse> {
     match msg {
-        HandleMsg::Increment {} => try_increment(deps, env),
         HandleMsg::Echo { recipient } => try_echo(deps, env, &recipient),
-        HandleMsg::Reset { count } => try_reset(deps, env, count),
     }
-}
-
-pub fn try_increment<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
-    _env: Env,
-) -> StdResult<HandleResponse> {
-    config(&mut deps.storage).update(|mut state| {
-        state.count += 1;
-        Ok(state)
-    })?;
-
-    Ok(HandleResponse::default())
 }
 
 pub fn try_echo<S: Storage, A: Api, Q: Querier>(
@@ -71,47 +57,51 @@ pub fn try_echo<S: Storage, A: Api, Q: Querier>(
     Ok(r)
 }
 
-pub fn try_reset<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
-    env: Env,
-    count: i32,
-) -> StdResult<HandleResponse> {
-    let api = &deps.api;
-    config(&mut deps.storage).update(|mut state| {
-        if api.canonical_address(&env.message.sender)? != state.owner {
-            return Err(StdError::unauthorized());
-        }
-        state.count = count;
-        Ok(state)
-    })?;
-    Ok(HandleResponse::default())
-}
+//pub fn try_reset<S: Storage, A: Api, Q: Querier>(
+//    deps: &mut Extern<S, A, Q>,
+//    env: Env,
+//    count: i32,
+//) -> StdResult<HandleResponse> {
+//    let api = &deps.api;
+//    config(&mut deps.storage).update(|mut state| {
+//        if api.canonical_address(&env.message.sender)? != state.owner {
+//            return Err(StdError::unauthorized());
+//        }
+//        state.count = count;
+//        Ok(state)
+//    })?;
+//    Ok(HandleResponse::default())
+//}
 
 pub fn query<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     msg: QueryMsg,
 ) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetCount {} => to_binary(&query_count(deps)?),
+        QueryMsg::GetFee {} => to_binary(&query_fee(deps)?),
     }
 }
 
-fn query_count<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>) -> StdResult<CountResponse> {
+fn query_fee<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>) -> StdResult<FeeResponse> {
     let state = config_read(&deps.storage).load()?;
-    Ok(CountResponse { count: state.count })
+    Ok(FeeResponse { fee: state.fee })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env};
-    use cosmwasm_std::{coins, from_binary, StdError};
+    use cosmwasm_std::{coins, from_binary, Coin, StdError, Uint128};
 
     #[test]
     fn proper_initialization() {
         let mut deps = mock_dependencies(20, &[]);
+        let fee = Coin {
+            amount: Uint128(100),
+            denom: "token".to_string(),
+        };
 
-        let msg = InitMsg { count: 17 };
+        let msg = InitMsg { fee: fee.clone() };
         let env = mock_env("creator", &coins(1000, "earth"));
 
         // we can just call .unwrap() to assert this was a success
@@ -119,36 +109,22 @@ mod tests {
         assert_eq!(0, res.messages.len());
 
         // it worked, let's query the state
-        let res = query(&deps, QueryMsg::GetCount {}).unwrap();
-        let value: CountResponse = from_binary(&res).unwrap();
-        assert_eq!(17, value.count);
-    }
-
-    #[test]
-    fn increment() {
-        let mut deps = mock_dependencies(20, &coins(2, "token"));
-
-        let msg = InitMsg { count: 17 };
-        let env = mock_env("creator", &coins(2, "token"));
-        let _res = init(&mut deps, env, msg).unwrap();
-
-        // beneficiary can release it
-        let env = mock_env("anyone", &coins(2, "token"));
-        let msg = HandleMsg::Increment {};
-        let _res = handle(&mut deps, env, msg).unwrap();
-
-        // should increase counter by 1
-        let res = query(&deps, QueryMsg::GetCount {}).unwrap();
-        let value: CountResponse = from_binary(&res).unwrap();
-        assert_eq!(18, value.count);
+        let res = query(&deps, QueryMsg::GetFee {}).unwrap();
+        let value: FeeResponse = from_binary(&res).unwrap();
+        assert_eq!(fee, value.fee);
     }
 
     #[test]
     fn failed_echo() {
-        let mut deps = mock_dependencies(20, &coins(2, "token"));
+        let mut deps = mock_dependencies(20, &[]);
+        let fee = Coin {
+            amount: Uint128(100),
+            denom: "token".to_string(),
+        };
 
-        let msg = InitMsg { count: 17 };
-        let env = mock_env("creator", &coins(2, "token"));
+        let msg = InitMsg { fee: fee.clone() };
+        let env = mock_env("creator", &coins(1000, "earth"));
+
         let _res = init(&mut deps, env, msg).unwrap();
 
         // beneficiary can release it
@@ -168,10 +144,15 @@ mod tests {
 
     #[test]
     fn echo() {
-        let mut deps = mock_dependencies(20, &coins(2, "token"));
+        let mut deps = mock_dependencies(20, &[]);
+        let fee = Coin {
+            amount: Uint128(100),
+            denom: "token".to_string(),
+        };
 
-        let msg = InitMsg { count: 17 };
-        let env = mock_env("creator", &coins(2, "token"));
+        let msg = InitMsg { fee: fee.clone() };
+        let env = mock_env("creator", &coins(1000, "earth"));
+
         let _res = init(&mut deps, env, msg).unwrap();
 
         let balance = coins(100, "token");
@@ -181,6 +162,7 @@ mod tests {
         };
         let res = handle(&mut deps, env, msg).unwrap();
         let msg = res.messages.get(0).expect("no message");
+        println!("Message {:#?}", msg);
         assert_eq!(
             msg,
             &CosmosMsg::Bank(BankMsg::Send {
@@ -193,33 +175,5 @@ mod tests {
             res.log,
             vec![log("action", "send"), log("recipient", "recipient"),]
         );
-    }
-
-    #[test]
-    fn reset() {
-        let mut deps = mock_dependencies(20, &coins(2, "token"));
-
-        let msg = InitMsg { count: 17 };
-        let env = mock_env("creator", &coins(2, "token"));
-        let _res = init(&mut deps, env, msg).unwrap();
-
-        // beneficiary can release it
-        let unauth_env = mock_env("anyone", &coins(2, "token"));
-        let msg = HandleMsg::Reset { count: 5 };
-        let res = handle(&mut deps, unauth_env, msg);
-        match res {
-            Err(StdError::Unauthorized { .. }) => {}
-            _ => panic!("Must return unauthorized error"),
-        }
-
-        // only the original creator can reset the counter
-        let auth_env = mock_env("creator", &coins(2, "token"));
-        let msg = HandleMsg::Reset { count: 5 };
-        let _res = handle(&mut deps, auth_env, msg).unwrap();
-
-        // should now be 5
-        let res = query(&deps, QueryMsg::GetCount {}).unwrap();
-        let value: CountResponse = from_binary(&res).unwrap();
-        assert_eq!(5, value.count);
     }
 }

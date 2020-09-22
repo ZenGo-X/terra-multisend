@@ -3,12 +3,31 @@
   "title": "InitMsg",
   "type": "object",
   "required": [
-    "count"
+    "fee"
   ],
   "properties": {
-    "count": {
-      "type": "integer",
-      "format": "int32"
+    "fee": {
+      "$ref": "#/definitions/Coin"
+    }
+  },
+  "definitions": {
+    "Coin": {
+      "type": "object",
+      "required": [
+        "amount",
+        "denom"
+      ],
+      "properties": {
+        "amount": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "denom": {
+          "type": "string"
+        }
+      }
+    },
+    "Uint128": {
+      "type": "string"
     }
   }
 }

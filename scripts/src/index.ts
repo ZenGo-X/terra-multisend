@@ -4,6 +4,7 @@ import {
   MnemonicKey,
   MsgExecuteContract,
   MsgInstantiateContract,
+  Coin,
 } from '@terra-money/terra.js';
 import * as fs from 'fs';
 
@@ -39,7 +40,7 @@ export async function main() {
   console.log('CodeId', codeId);
 
   let initMsg = {
-    count: 18,
+    fee: { denom: 'uluna', amount: '100' },
   };
 
   const instantiate = new MsgInstantiateContract(
@@ -57,7 +58,7 @@ export async function main() {
     instantiateTxResult.logs[0].events[0].attributes[2].value;
   console.log('Contract address', contractAddress);
 
-  //// Execute a transfer message
+  // Execute a transfer message
   let executeMsg = {
     echo: {
       recipient: 'terra17lmam6zguazs5q5u6z5mmx76uj63gldnse2pdp',
