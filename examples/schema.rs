@@ -3,8 +3,8 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
-use terra_echo::msg::{FeeResponse, HandleMsg, InitMsg, QueryMsg};
-use terra_echo::state::State;
+use terra_multisend::msg::{FeeResponse, HandleMsg, InitMsg, QueryMsg};
+use terra_multisend::state::State;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();

@@ -1,5 +1,20 @@
 {
-  "echo": {
-    "address": "terra17lmam6zguazs5q5u6z5mmx76uj63gldnse2pdp"
+  "multi_send": {
+    "payments": [
+      {
+        "recipient": "terra17lmam6zguazs5q5u6z5mmx76uj63gldnse2pdp",
+        "pay": {
+          "denom": "uluna",
+          "amount": "100000000"
+        }
+      },
+      {
+        "recipient": "terra1757tkx08n0cqrw7p86ny9lnxsqeth0wgp0em95",
+        "pay": {
+          "denom": "uluna",
+          "amount": "100000000"
+        }
+      }
+    ]
   }
 }

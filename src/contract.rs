@@ -78,9 +78,9 @@ pub fn try_multisend<S: Storage, A: Api, Q: Querier>(
             from_address: from_address,
             to_address: to_recipient,
             // TODO: Change to vec of coins when we update to multicoins
-            amount: vec![payment.amount.clone()],
+            amount: vec![payment.pay.clone()],
         }));
-        log_to_send.push(log("send", payment.amount.amount.u128()));
+        log_to_send.push(log("send", payment.pay.amount.u128()));
         log_to_send.push(log("recipient", payment.recipient.as_str()));
     }
 
@@ -109,6 +109,7 @@ fn query_fee<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>) -> StdResul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::msg::Payment;
     use cosmwasm_std::testing::{mock_dependencies, mock_env};
     use cosmwasm_std::{coins, from_binary, Coin, StdError, Uint128};
 
@@ -201,7 +202,7 @@ mod tests {
     }
 
     #[test]
-    fn echo() {
+    fn multisend() {
         let mut deps = mock_dependencies(20, &[]);
         let fee = Coin {
             amount: Uint128(100),
@@ -213,29 +214,36 @@ mod tests {
 
         let _res = init(&mut deps, env, msg).unwrap();
 
-        let balance = coins(100, "token");
+        let balance = coins(200, "token");
         let env = mock_env("anyone", &balance);
-        let msg = HandleMsg::Echo {
-            recipient: HumanAddr::from("recipient"),
+        let coin = Coin {
+            amount: Uint128(100),
+            denom: "token".to_string(),
+        };
+        let payment1 = Payment {
+            recipient: HumanAddr::from("recipient1"),
+            pay: coin.clone(),
+        };
+        let payment2 = Payment {
+            recipient: HumanAddr::from("recipient2"),
+            pay: coin.clone(),
         };
 
-        //deps.querier.update_balance("anyone", coins(200, "token"));
-        //let query_balance = deps.querier.query_all_balances("anyone");
-        //println!("Balance {:#?}", query_balance);
+        let msg = HandleMsg::MultiSend {
+            payments: vec![payment1, payment2],
+        };
 
         let res = handle(&mut deps, env, msg).unwrap();
         let msg = res.messages.get(0).expect("no message");
-        assert_eq!(
-            msg,
-            &CosmosMsg::Bank(BankMsg::Send {
-                from_address: HumanAddr::from("cosmos2contract"),
-                to_address: HumanAddr::from("recipient"),
-                amount: coins(100, "token"),
-            })
-        );
-        assert_eq!(
-            res.log,
-            vec![log("action", "send"), log("recipient", "recipient"),]
-        );
+        println!("Messages {:#?}", res.messages);
+        println!("Log {:#?}", res.log);
+        //assert_eq!(
+        //    msg,
+        //    &CosmosMsg::Bank(BankMsg::Send {
+        //        from_address: HumanAddr::from("cosmos2contract"),
+        //        to_address: HumanAddr::from("recipient"),
+        //        amount: coins(100, "token"),
+        //    })
+        //);
     }
 }

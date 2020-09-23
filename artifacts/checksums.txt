@@ -1,1 +1,1 @@
-4ad925e1872fb278710cb8f22b9b033ecd1e5393b9c1fbc4b3bfa5b4de516258  terra_multisend.wasm
+19f4c6538b304d03db8f6bb7aaccf99a5de3b71b1c1ac449c6ea07bc68cadb1b  terra_multisend.wasm

@@ -20,10 +20,65 @@
           }
         }
       }
+    },
+    {
+      "type": "object",
+      "required": [
+        "multi_send"
+      ],
+      "properties": {
+        "multi_send": {
+          "type": "object",
+          "required": [
+            "payments"
+          ],
+          "properties": {
+            "payments": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Payment"
+              }
+            }
+          }
+        }
+      }
     }
   ],
   "definitions": {
+    "Coin": {
+      "type": "object",
+      "required": [
+        "amount",
+        "denom"
+      ],
+      "properties": {
+        "amount": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "denom": {
+          "type": "string"
+        }
+      }
+    },
     "HumanAddr": {
+      "type": "string"
+    },
+    "Payment": {
+      "type": "object",
+      "required": [
+        "pay",
+        "recipient"
+      ],
+      "properties": {
+        "pay": {
+          "$ref": "#/definitions/Coin"
+        },
+        "recipient": {
+          "$ref": "#/definitions/HumanAddr"
+        }
+      }
+    },
+    "Uint128": {
       "type": "string"
     }
   }

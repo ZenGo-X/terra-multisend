@@ -59,9 +59,60 @@ export async function main() {
   console.log('Contract address', contractAddress);
 
   // Execute a transfer message
+  //let executeMsg = {
+  //  echo: {
+  //    recipient: 'terra17lmam6zguazs5q5u6z5mmx76uj63gldnse2pdp',
+  //  },
+  //};
+
+  //const execute = new MsgExecuteContract(
+  //  wallet.key.accAddress, // sender
+  //  contractAddress, // contract account address
+  //  { ...executeMsg }, // handle msg
+  //  { uluna: 100000000 }, // coins
+  //  // {}, // coins
+  //);
+
+  //const executeTx = await wallet.createAndSignTx({
+  //  msgs: [execute],
+  //});
+
+  //const executeTxResult = await terra.tx.broadcast(executeTx);
+  //console.log('ExecuteTxResult', executeTxResult);
+
+  // Execute a transfer message
+  let payment1 = {
+    recipient: 'terra17lmam6zguazs5q5u6z5mmx76uj63gldnse2pdp',
+    pay: {
+      denom: 'uluna',
+      amount: '100000000',
+    },
+  };
+  let payment2 = {
+    recipient: 'terra1757tkx08n0cqrw7p86ny9lnxsqeth0wgp0em95',
+    pay: {
+      denom: 'uluna',
+      amount: '100000000',
+    },
+  };
   let executeMsg = {
-    echo: {
-      recipient: 'terra17lmam6zguazs5q5u6z5mmx76uj63gldnse2pdp',
+    multi_send: {
+      payments: [
+        {
+          recipient: 'terra17lmam6zguazs5q5u6z5mmx76uj63gldnse2pdp',
+          pay: {
+            denom: 'uluna',
+            amount: '100000000',
+          },
+        },
+        {
+          recipient: 'terra1757tkx08n0cqrw7p86ny9lnxsqeth0wgp0em95',
+          pay: {
+            denom: 'uluna',
+            amount: '100000000',
+          },
+        },
+      ],
     },
   };
 
@@ -69,8 +120,7 @@ export async function main() {
     wallet.key.accAddress, // sender
     contractAddress, // contract account address
     { ...executeMsg }, // handle msg
-    { uluna: 100000000 }, // coins
-    // {}, // coins
+    { uluna: 200000000 }, // coins
   );
 
   const executeTx = await wallet.createAndSignTx({
@@ -79,21 +129,6 @@ export async function main() {
 
   const executeTxResult = await terra.tx.broadcast(executeTx);
   console.log('ExecuteTxResult', executeTxResult);
-
-  ////// Query balance
-  // let queryMsgArguments = {
-  //   balance: {
-  //     address: 'terra1x46rqay4d3cssq8gxxvqz8xt6nwlz4td20k38v',
-  //   },
-  // };
-
-  // const result = await terra.wasm.contractQuery(
-  //   //contractAddress,
-  //   'terra1l09lzlktar3m0hth59z3se86fsyz084map2yln',
-  //   { ...queryMsgArguments }, // query msg
-  // );
-
-  // console.log('Result', result);
 }
 
 main();
