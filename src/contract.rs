@@ -59,17 +59,54 @@ pub fn try_echo<S: Storage, A: Api, Q: Querier>(
 }
 
 pub fn try_multisend<S: Storage, A: Api, Q: Querier>(
-    _deps: &mut Extern<S, A, Q>,
+    deps: &mut Extern<S, A, Q>,
     env: Env,
     payments: &Vec<Payment>,
 ) -> StdResult<HandleResponse> {
     if env.message.sent_funds.is_empty() {
         return Err(StdError::generic_err(
-            "You must pass some coins to send to an address",
+            "You must pass some coins to send make a multisend",
         ));
     }
     let mut messages = vec![];
     let mut log_to_send = vec![];
+
+    let state = config_read(&deps.storage).load()?;
+    let fee = state.fee;
+    let owner = state.owner;
+
+    let index = env
+        .message
+        .sent_funds
+        .iter()
+        .enumerate()
+        .find_map(|(i, exist)| {
+            if exist.denom == fee.denom {
+                Some(i)
+            } else {
+                None
+            }
+        });
+
+    match index {
+        Some(idx) => {
+            if env.message.sent_funds[idx].amount < fee.amount {
+                return Err(StdError::generic_err("Incefficiant fee to cover costs"));
+            }
+            let from_address = env.contract.address.clone();
+            messages.push(CosmosMsg::Bank(BankMsg::Send {
+                from_address: from_address,
+                to_address: deps.api.human_address(&owner.clone())?,
+                amount: vec![fee.clone()],
+            }));
+            log_to_send.push(log("owner payed", deps.api.human_address(&owner)?.as_str()));
+        }
+        None => {
+            return Err(StdError::generic_err(
+                "You must pay a fee with the specified token",
+            ));
+        }
+    }
 
     for payment in payments {
         let from_address = env.contract.address.clone();
@@ -77,10 +114,8 @@ pub fn try_multisend<S: Storage, A: Api, Q: Querier>(
         messages.push(CosmosMsg::Bank(BankMsg::Send {
             from_address: from_address,
             to_address: to_recipient,
-            // TODO: Change to vec of coins when we update to multicoins
-            amount: vec![payment.pay.clone()],
+            amount: payment.pay.clone(),
         }));
-        log_to_send.push(log("send", payment.pay.amount.u128()));
         log_to_send.push(log("recipient", payment.recipient.as_str()));
     }
 
@@ -122,7 +157,7 @@ mod tests {
         };
 
         let msg = InitMsg { fee: fee.clone() };
-        let env = mock_env("creator", &coins(1000, "earth"));
+        let env = mock_env("creator", &coins(1000, "token"));
 
         // we can just call .unwrap() to assert this was a success
         let res = init(&mut deps, env, msg).unwrap();
@@ -143,11 +178,10 @@ mod tests {
         };
 
         let msg = InitMsg { fee: fee.clone() };
-        let env = mock_env("creator", &coins(1000, "earth"));
+        let env = mock_env("creator", &coins(1000, "token"));
 
         let _res = init(&mut deps, env, msg).unwrap();
 
-        // beneficiary can release it
         let env = mock_env("anyone", &[]);
         let msg = HandleMsg::Echo {
             recipient: HumanAddr::from("recipient"),
@@ -171,7 +205,7 @@ mod tests {
         };
 
         let msg = InitMsg { fee: fee.clone() };
-        let env = mock_env("creator", &coins(1000, "earth"));
+        let env = mock_env("creator", &coins(1000, "token"));
 
         let _res = init(&mut deps, env, msg).unwrap();
 
@@ -210,7 +244,7 @@ mod tests {
         };
 
         let msg = InitMsg { fee: fee.clone() };
-        let env = mock_env("creator", &coins(1000, "earth"));
+        let env = mock_env("creator", &coins(1000, "token"));
 
         let _res = init(&mut deps, env, msg).unwrap();
 
@@ -222,11 +256,11 @@ mod tests {
         };
         let payment1 = Payment {
             recipient: HumanAddr::from("recipient1"),
-            pay: coin.clone(),
+            pay: vec![coin.clone()],
         };
         let payment2 = Payment {
             recipient: HumanAddr::from("recipient2"),
-            pay: coin.clone(),
+            pay: vec![coin.clone()],
         };
 
         let msg = HandleMsg::MultiSend {
@@ -234,16 +268,118 @@ mod tests {
         };
 
         let res = handle(&mut deps, env, msg).unwrap();
-        let msg = res.messages.get(0).expect("no message");
         println!("Messages {:#?}", res.messages);
         println!("Log {:#?}", res.log);
-        //assert_eq!(
-        //    msg,
-        //    &CosmosMsg::Bank(BankMsg::Send {
-        //        from_address: HumanAddr::from("cosmos2contract"),
-        //        to_address: HumanAddr::from("recipient"),
-        //        amount: coins(100, "token"),
-        //    })
-        //);
+    }
+
+    #[test]
+    fn empty_multisend() {
+        let mut deps = mock_dependencies(20, &[]);
+        let fee = Coin {
+            amount: Uint128(100),
+            denom: "token".to_string(),
+        };
+
+        let msg = InitMsg { fee: fee.clone() };
+        let env = mock_env("creator", &coins(1000, "token"));
+
+        let _res = init(&mut deps, env, msg).unwrap();
+
+        let env = mock_env("anyone", &[]);
+        let coin = Coin {
+            amount: Uint128(100),
+            denom: "token".to_string(),
+        };
+        let payment1 = Payment {
+            recipient: HumanAddr::from("recipient1"),
+            pay: vec![coin.clone()],
+        };
+
+        let msg = HandleMsg::MultiSend {
+            payments: vec![payment1],
+        };
+        let res = handle(&mut deps, env, msg);
+        match res {
+            Ok(_) => panic!("expected error"),
+            Err(StdError::GenericErr { msg, .. }) => {
+                assert_eq!(msg, "You must pass some coins to send make a multisend")
+            }
+            Err(e) => panic!("unexpected error: {:?}", e),
+        }
+    }
+
+    #[test]
+    fn no_token_of_fee_multisend() {
+        let mut deps = mock_dependencies(20, &[]);
+        let fee = Coin {
+            amount: Uint128(100),
+            denom: "token".to_string(),
+        };
+
+        let msg = InitMsg { fee: fee.clone() };
+        let env = mock_env("creator", &coins(1000, "token"));
+
+        let _res = init(&mut deps, env, msg).unwrap();
+
+        let balance = coins(200, "fake");
+        let env = mock_env("anyone", &balance);
+        let coin = Coin {
+            amount: Uint128(100),
+            denom: "token".to_string(),
+        };
+        let payment1 = Payment {
+            recipient: HumanAddr::from("recipient1"),
+            pay: vec![coin.clone()],
+        };
+
+        let msg = HandleMsg::MultiSend {
+            payments: vec![payment1],
+        };
+        let res = handle(&mut deps, env, msg);
+        match res {
+            Ok(_) => panic!("expected error"),
+            Err(StdError::GenericErr { msg, .. }) => {
+                assert_eq!(msg, "You must pay a fee with the specified token")
+            }
+            Err(e) => panic!("unexpected error: {:?}", e),
+        }
+    }
+
+    #[test]
+    fn incefficient_fee() {
+        let mut deps = mock_dependencies(20, &[]);
+        let fee = Coin {
+            amount: Uint128(100),
+            denom: "token".to_string(),
+        };
+
+        let msg = InitMsg { fee: fee.clone() };
+        let env = mock_env("creator", &coins(1000, "token"));
+
+        let _res = init(&mut deps, env, msg).unwrap();
+
+        // Only pay 50 fee
+        let balance = coins(50, "token");
+        let env = mock_env("anyone", &balance);
+        let coin = Coin {
+            amount: Uint128(100),
+            denom: "token".to_string(),
+        };
+        let payment1 = Payment {
+            recipient: HumanAddr::from("recipient1"),
+            pay: vec![coin.clone()],
+        };
+
+        let msg = HandleMsg::MultiSend {
+            payments: vec![payment1],
+        };
+        let res = handle(&mut deps, env, msg);
+        match res {
+            Ok(_) => panic!("expected error"),
+            Err(StdError::GenericErr { msg, .. }) => {
+                assert_eq!(msg, "Incefficiant fee to cover costs")
+            }
+            Err(e) => panic!("unexpected error: {:?}", e),
+        }
     }
 }

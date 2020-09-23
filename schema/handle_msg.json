@@ -71,7 +71,10 @@
       ],
       "properties": {
         "pay": {
-          "$ref": "#/definitions/Coin"
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Coin"
+          }
         },
         "recipient": {
           "$ref": "#/definitions/HumanAddr"
