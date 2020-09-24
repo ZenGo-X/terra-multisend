@@ -1,0 +1,86 @@
+#!/usr/bin/env node
+
+const program = require('commander');
+const fs = require('fs');
+const path = require('path');
+const { getTransactions, getTxInfo } = require('../dist/src');
+
+const { TerraClient } = require('../dist/src');
+const client = new TerraClient();
+
+const csv = require('csvtojson');
+
+program.command('address').action(async (options) => {
+  await client.init();
+  const address = client.getAddress();
+  console.log(address);
+});
+
+program
+  .command('balance')
+  .option('-n, --network [name]', 'Name of network ("soju", "columbus_4")')
+  .option('-a, --address [address]', 'Optionally pass an address')
+  .action(async (options) => {
+    await client.init();
+    console.log(
+      await client.getBalance(options.address, options.network || 'soju'),
+    );
+  });
+
+program
+  .command('multisend <file>')
+  .option('-a, --address [address]', 'Address of multisend contract')
+  .option('-dr, --dry_run', 'Print the tx without posting it')
+  .action(async (file, options) => {
+    await client.init();
+    let output = await csv().fromFile(file);
+    console.log(
+      await client.multisend(output, options.address, options.dry_run),
+    );
+  });
+
+program
+  .command('tx_info <txhash>')
+  .option('-n, --network [name]', 'Name of network ("soju" or "columbus_3")')
+  .action(async (txhash, options) => {
+    console.log(await getTxInfo(txhash, options.network || 'soju'));
+  });
+
+program
+  .command('transactions')
+  .option('-a --account <account>', 'Account address')
+  .option('-p --page <page>', 'Page number')
+  .option('-l --limit <limit>', 'Page limit')
+  .option('-n, --network [name]', 'Name of network ("soju" or "columbus-3')
+  .action(async (options) => {
+    const txs = await getTransactions(options);
+    console.log(JSON.stringify(txs, null, 2));
+  });
+
+program
+  .command('transfer <to> <amount>')
+  .option(
+    '-d, --denom [symbol]',
+    'denomination of the transfer ("luna" default, "usd", ...)',
+  )
+  .option('-n, --network [name]', 'Name of network ("soju" or "columbus_3")')
+  .option('-dr, --dry_run', 'Print the tx without posting it')
+  .option('-all, --all', 'Transfer all the coins of the specified currency')
+  .action(async (to, amount, options) => {
+    await client.init();
+    let sendOptions = {
+      memo: options.memo,
+      chainName: options.network,
+    };
+    let res = await client.transfer(
+      to,
+      amount,
+      options.denom || 'uluna',
+      sendOptions,
+      options.all,
+      options.dry_run,
+    );
+    console.log('Result', res);
+  });
+
+program.parse(process.argv);

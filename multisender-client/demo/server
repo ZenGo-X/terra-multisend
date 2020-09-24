@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+
+const {TerraThreshSigServer} = require('../dist/src/server');
+new TerraThreshSigServer().launch();
