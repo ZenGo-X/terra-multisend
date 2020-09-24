@@ -1,6 +1,5 @@
 import assert from 'assert';
 import * as fs from 'fs';
-
 import { DEFULT_GAS_PRICE } from './constants';
 
 import {
@@ -12,6 +11,7 @@ import {
   Coin,
   Coins,
   Denom,
+  Numeric,
 } from '@terra-money/terra.js';
 
 type SendOptions = {
@@ -71,6 +71,10 @@ export class TerraClient {
       let inputCoin = new Coin(payment.denom, payment.amount);
       input.push(inputCoin);
     }
+    let inputs = this.consolidate(input);
+    console.log('Outputs', inputs);
+    inputs = await this.adjustStableCoins(inputs);
+    console.log('Outputs', inputs);
 
     let executeMsg = {
       multi_send: {
@@ -81,13 +85,13 @@ export class TerraClient {
 
     let fee = await this.getMultiSendFee(contractAddress);
 
-    input.push(fee);
+    inputs.push(fee);
 
     const execute = new MsgExecuteContract(
       this.terraWallet.key.accAddress, // sender
       contractAddress, // contract account address
       { ...executeMsg }, // handle msg
-      input, // coins
+      inputs, // coins
     );
 
     const tx = await this.terraWallet.createAndSignTx({
@@ -103,6 +107,43 @@ export class TerraClient {
       let resp = await this.terraWallet.lcd.tx.broadcast(tx);
       return resp;
     }
+  }
+
+  private async adjustStableCoins(coins: Coin[]): Promise<Coin[]> {
+    const taxRate = await this.terraWallet.lcd.treasury.taxRate();
+    let outputs = [];
+    for (let coin of coins) {
+      const taxCap = await this.terraWallet.lcd.treasury.taxCap(coin.denom);
+      let taxToPay = 0;
+      if (coin.denom != 'uluna') {
+        taxToPay = Math.floor(
+          Math.min(
+            Number(taxCap.toData().amount),
+            Number(taxRate) * Number(coin.amount),
+          ),
+        );
+      }
+      outputs.push(new Coin(coin.denom, Number(coin.amount.add(taxToPay))));
+    }
+    return outputs;
+  }
+
+  private consolidate(coins: Coin[]): Coin[] {
+    let consolidatedCoins = new Map<string, Numeric.Output>();
+    for (let coin of coins) {
+      let current = consolidatedCoins.get(coin.denom);
+      if (current == undefined) {
+        consolidatedCoins.set(coin.denom, coin.amount);
+      } else {
+        consolidatedCoins.set(coin.denom, current.add(coin.amount));
+      }
+    }
+    let outputs = [];
+    for (let coin of consolidatedCoins.entries()) {
+      let output = new Coin(coin[0], coin[1]);
+      outputs.push(output);
+    }
+    return outputs;
   }
 
   private async getMultiSendFee(contractAddress: string) {
