@@ -12,6 +12,7 @@ import * as fs from 'fs';
 export async function main() {
   // test1 key from localterra accounts
   const mk = new MnemonicKey({
+    // This is a localTerra mnemonic. NO NOT USE THIS FOR REAL MOENY
     mnemonic:
       'notice oak worry limit wrap speak medal online prefer cluster roof addict wrist behave treat actual wasp year salad speed social layer crew genius',
   });
@@ -20,6 +21,8 @@ export async function main() {
   const terra = new LCDClient({
     URL: 'http://localhost:1317',
     chainID: 'localterra',
+    // Replace localterra with tequila/columbus network endpoints to upload
+    // Also replace the mnemonic with an account that contains real tokens
     //URL: 'https://tequila-fcd.terra.dev,
     //chainID: 'tequila-0004'
     gasPrices: '0.15uluna',
@@ -62,19 +65,41 @@ export async function main() {
     instantiateTxResult.logs[0].events[0].attributes[2].value;
   console.log('Contract address', contractAddress);
 
+  // Uncomment to test sending tokens on LocalTerra
+
   // Execute a transfer message
+  //let payment1 = {
+  //  recipient: 'terra17lmam6zguazs5q5u6z5mmx76uj63gldnse2pdp',
+  //  pay: [
+  //    {
+  //      denom: 'uluna',
+  //      amount: '100000000',
+  //    },
+  //  ],
+  //};
+  //let payment2 = {
+  //  recipient: 'terra1757tkx08n0cqrw7p86ny9lnxsqeth0wgp0em95',
+  //  pay: [
+  //    {
+  //      denom: 'uluna',
+  //      amount: '100000000',
+  //    },
+  //  ],
+  //};
+
   //let executeMsg = {
-  //  echo: {
-  //    recipient: 'terra17lmam6zguazs5q5u6z5mmx76uj63gldnse2pdp',
+  //  multi_send: {
+  //    payments: [payment1, payment2],
   //  },
   //};
 
+  //let ulunaCoin = new Coin('uluna', 200000000 + feeAmount);
+  //let coins = new Coins([ulunaCoin]);
   //const execute = new MsgExecuteContract(
   //  wallet.key.accAddress, // sender
   //  contractAddress, // contract account address
   //  { ...executeMsg }, // handle msg
-  //  { uluna: 100000000 }, // coins
-  //  // {}, // coins
+  //  coins, // coins
   //);
 
   //const executeTx = await wallet.createAndSignTx({
@@ -83,48 +108,6 @@ export async function main() {
 
   //const executeTxResult = await terra.tx.broadcast(executeTx);
   //console.log('ExecuteTxResult', executeTxResult);
-
-  // Execute a transfer message
-  let payment1 = {
-    recipient: 'terra17lmam6zguazs5q5u6z5mmx76uj63gldnse2pdp',
-    pay: [
-      {
-        denom: 'uluna',
-        amount: '100000000',
-      },
-    ],
-  };
-  let payment2 = {
-    recipient: 'terra1757tkx08n0cqrw7p86ny9lnxsqeth0wgp0em95',
-    pay: [
-      {
-        denom: 'uluna',
-        amount: '100000000',
-      },
-    ],
-  };
-
-  let executeMsg = {
-    multi_send: {
-      payments: [payment1, payment2],
-    },
-  };
-
-  let ulunaCoin = new Coin('uluna', 200000000 + feeAmount);
-  let coins = new Coins([ulunaCoin]);
-  const execute = new MsgExecuteContract(
-    wallet.key.accAddress, // sender
-    contractAddress, // contract account address
-    { ...executeMsg }, // handle msg
-    coins, // coins
-  );
-
-  const executeTx = await wallet.createAndSignTx({
-    msgs: [execute],
-  });
-
-  const executeTxResult = await terra.tx.broadcast(executeTx);
-  console.log('ExecuteTxResult', executeTxResult);
 }
 
 main();
