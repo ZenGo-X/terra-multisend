@@ -44,12 +44,12 @@ pub fn try_echo<S: Storage, A: Api, Q: Querier>(
     }
     let log = vec![log("action", "send"), log("recipient", recipient.as_str())];
     let from_address = env.contract.address.clone();
-    let to_recipient = recipient.clone();
+    let to_address = recipient.clone();
 
     let r = HandleResponse {
         messages: vec![CosmosMsg::Bank(BankMsg::Send {
-            from_address: from_address,
-            to_address: to_recipient,
+            from_address,
+            to_address,
             amount: env.message.sent_funds,
         })],
         log,
@@ -61,7 +61,7 @@ pub fn try_echo<S: Storage, A: Api, Q: Querier>(
 pub fn try_multisend<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
-    payments: &Vec<Payment>,
+    payments: &[Payment],
 ) -> StdResult<HandleResponse> {
     if env.message.sent_funds.is_empty() {
         return Err(StdError::generic_err(
@@ -95,9 +95,9 @@ pub fn try_multisend<S: Storage, A: Api, Q: Querier>(
             }
             let from_address = env.contract.address.clone();
             messages.push(CosmosMsg::Bank(BankMsg::Send {
-                from_address: from_address,
-                to_address: deps.api.human_address(&owner.clone())?,
-                amount: vec![fee.clone()],
+                from_address,
+                to_address: deps.api.human_address(&owner)?,
+                amount: vec![fee],
             }));
             log_to_send.push(log("owner payed", deps.api.human_address(&owner)?.as_str()));
         }
@@ -110,17 +110,17 @@ pub fn try_multisend<S: Storage, A: Api, Q: Querier>(
 
     for payment in payments {
         let from_address = env.contract.address.clone();
-        let to_recipient = payment.recipient.clone();
+        let to_address = payment.recipient.clone();
         messages.push(CosmosMsg::Bank(BankMsg::Send {
-            from_address: from_address,
-            to_address: to_recipient,
+            from_address,
+            to_address,
             amount: payment.pay.clone(),
         }));
         log_to_send.push(log("recipient", payment.recipient.as_str()));
     }
 
     let r = HandleResponse {
-        messages: messages,
+        messages,
         log: log_to_send,
         data: None,
     };
