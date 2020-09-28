@@ -1,90 +1,83 @@
-# CosmWasm Starter Pack
+# CosmWasm Multisend Contract
 
-This is a template to build smart contracts in Rust to run inside a
+This is a multisend smart contracts in Rust built tor run on
 [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) module on all chains that enable it.
-To understand the framework better, please read the overview in the
-[cosmwasm repo](https://github.com/CosmWasm/cosmwasm/blob/master/README.md),
-and dig into the [cosmwasm docs](https://www.cosmwasm.com).
-This assumes you understand the theory and just want to get coding.
+The project was built and tested for the Terra network.
 
-## Creating a new repo from template
+## What it does
 
-Assuming you have a recent version of rust and cargo installed (via [rustup](https://rustup.rs/)),
-then the following should get you a new repo to start a contract:
+This project covers all you need to build, deploy and interact with the smart contract on the Terra blockchain.
+The main parts of the project are:
 
-First, install
-[cargo-generate](https://github.com/ashleygwilliams/cargo-generate).
-Unless you did that before, run this line now:
+- The contract (this page)
+- The deployment scripts in [scripts](./scripts)
+- A basic CLI client application to send and receive Terra/Luna as well as interact with the deployed contract: [multisender-client](./multisender-client)
 
-```sh
-cargo install cargo-generate --features vendored-openssl
-```
+Each part has its own README and instructions
 
-Now, use it to create your new contract.
-Go to the folder in which you want to place it and run:
+# Multisend Contract
 
-**0.10 (latest)**
+The contract is written in `Rust` and is compiled to wasm. The contract receives a list of addresses and amounts, and distributes the passed coins to these addresses.
+The amount sent to the contract must be enough to cover the outgoing payments.
 
-```sh
-cargo generate --git https://github.com/CosmWasm/cosmwasm-template.git --name YOUR_NAME_HERE
-```
+## Prerequisites
 
-**0.9**
+Building the contract requires an up-to-date `Rust` version with `wasm` support.
 
 ```sh
-cargo generate --git https://github.com/CosmWasm/cosmwasm-template.git --branch 0.9 --name YOUR_NAME_HERE
+rustup default stable
+rustup target add wasm32-unknown-unknown
 ```
 
-**0.8**
+For further details, consult the official Terra [documentation](https://docs.terra.money/contracts/tutorial/setup.html#install-terra-core-locally) for setting up the environment.
+
+As a live test environment, it is recommended to use [LocalTerra](https://github.com/terra-project/LocalTerra). Follow the installation process of LocalTerra in the link
+
+## Building the contract
+
+Clone the contract to a new environment.
+
+```
+git clone https://github.com/ZenGo-X/terra-multisend.git
+```
+
+Make sure the project compiles by running
 
 ```sh
-cargo generate --git https://github.com/CosmWasm/cosmwasm-template.git --branch 0.8 --name YOUR_NAME_HERE
+cargo wasm
 ```
 
-You will now have a new folder called `YOUR_NAME_HERE` (I hope you changed that to something else)
-containing a simple working contract and build system that you can customize.
-
-## Create a Repo
-
-After generating, you have a initialized local git repo, but no commits, and no remote.
-Go to a server (eg. github) and create a new upstream repo (called `YOUR-GIT-URL` below).
-Then run the following:
+This will build an unoptimized version of the contract, just to make sure the compilation works. To build an optimized version that can be uploaded to the blockchain, run
 
 ```sh
-# this is needed to create a valid Cargo.lock file (see below)
-cargo check
-git checkout -b master # in case you generate from non-master
-git add .
-git commit -m 'Initial Commit'
-git remote add origin YOUR-GIT-URL
-git push -u origin master
+docker run --rm -v "$(pwd)":/code \
+  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+  cosmwasm/rust-optimizer:0.10.3
 ```
 
-## CI Support
+More instructions on building and developing the contract in [Developing](./Developing.md)
 
-We have template configurations for both [GitHub Actions](.github/workflows/Basic.yml)
-and [Circle CI](.circleci/config.yml) in the generated project, so you can
-get up and running with CI right away.
+Once the contract is compiled, go to [scripts](./scripts) to deploy the contract using `Terra.js`
 
-One note is that the CI runs all `cargo` commands
-with `--locked` to ensure it uses the exact same versions as you have locally. This also means
-you must have an up-to-date `Cargo.lock` file, which is not auto-generated.
-The first time you set up the project (or after adding any dep), you should ensure the
-`Cargo.lock` file is updated, so the CI will test properly. This can be done simply by
-running `cargo check` or `cargo unit-test`.
+## Contract use cases and limitations
 
-## Using your project
+The Terra blockchain supports sending multiple payments simultaneously via a `MsgMultiSend`. Still, the contract could be useful for several use cases:
 
-Once you have your custom repo, you should check out [Developing](./Developing.md) to explain
-more on how to run tests and develop code. Or go through the
-[online tutorial](https://www.cosmwasm.com/docs/getting-started/intro) to get a better feel
-of how to develop.
+- Integration with other smart contracts
+- Sending ERC20/WC20 tokens (in future versions)
+- Collecting payment for the provided service
 
-[Publishing](./Publishing.md) contains useful information on how to publish your contract
-to the world, once you are ready to deploy it on a running blockchain. And
+The contract can be also easily extended to perform additional tasks, such as swapping tokens to the required coin etc.
+
+## Contract Demon
+
+In the demo, the contract sends a batch of transactors to the addresses specified in the csv.
+The LocalTerra instanc is
+
+## Misc
+
+[Publishing](./Publishing.md) contains useful information on how to publish your the
+contract, once you are ready to deploy it on a running blockchain.
 [Importing](./Importing.md) contains information about pulling in other contracts or crates
 that have been published.
-
-Please replace this README file with information about your specific project. You can keep
-the `Developing.md` and `Publishing.md` files as useful referenced, but please set some
-proper description in the README.

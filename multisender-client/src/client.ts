@@ -81,7 +81,7 @@ export class TerraClient {
         payments: parsedPayments,
       },
     };
-    contractAddress = 'terra1tndcaqxkpc5ce9qee5ggqf430mr2z3pefe5wj6';
+    contractAddress = 'terra18vd8fpwxzck93qlwghaj6arh4p7c5n896xzem5';
 
     let fee = await this.getMultiSendFee(contractAddress);
 
