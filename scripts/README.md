@@ -3,6 +3,13 @@
 This is a basic script that uses `Terra.js` to deploy the multisender smart contract.
 The scripts uses the hardcoded mnemonics of the [LocalTerra](https://github.com/terra-project/LocalTerra) network.
 
+The scripts performs the following tasks:
+
+1. Upload the compiled byte code to the blockchain
+2. Instantiate a new contract and print its contract address
+
+Contract initialization receives a fee parameter. The fee is payed to the contract owner upon interaction with the contract. The fee can be initiated to 0.
+
 In order to upload to tequila-0004:
 
 - Change the endpoint of the node in the code when creating the LCD

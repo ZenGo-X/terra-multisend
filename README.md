@@ -1,12 +1,12 @@
 # CosmWasm Multisend Contract
 
-This is a multisend smart contracts in Rust built tor run on
+This is a multisend smart contracts in Rust built to run on
 [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) module on all chains that enable it.
 The project was built and tested for the Terra network.
 
 ## What it does
 
-This project covers all you need to build, deploy and interact with the smart contract on the Terra blockchain.
+This project covers all that is required to build, deploy and interact with the smart contract on the Terra blockchain.
 The main parts of the project are:
 
 - The contract (this page)
@@ -19,6 +19,9 @@ Each part has its own README and instructions
 
 The contract is written in `Rust` and is compiled to wasm. The contract receives a list of addresses and amounts, and distributes the passed coins to these addresses.
 The amount sent to the contract must be enough to cover the outgoing payments.
+
+The contract also includes a possible fee, set on contract initialization. The fee is paid to the contract owner and must be added to the total payment received by the contract when creating a transaction.
+The script in [multisender-client](./multisender-client) queries the contract and adds the required fee to the transaction.
 
 ## Prerequisites
 
