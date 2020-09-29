@@ -21,8 +21,6 @@ export async function main() {
   const terra = new LCDClient({
     URL: 'http://localhost:1317',
     chainID: 'localterra',
-    // Replace localterra with tequila/columbus network endpoints to upload
-    // Also replace the mnemonic with an account that contains real tokens
     //URL: 'https://tequila-fcd.terra.dev,
     //chainID: 'tequila-0004'
     gasPrices: '0.15uluna',

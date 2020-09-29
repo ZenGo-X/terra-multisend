@@ -81,7 +81,7 @@ export class TerraClient {
         payments: parsedPayments,
       },
     };
-    contractAddress = 'terra18vd8fpwxzck93qlwghaj6arh4p7c5n896xzem5';
+    contractAddress = 'terra1sh36qn08g4cqg685cfzmyxqv2952q6r8gpczrt';
 
     let fee = await this.getMultiSendFee(contractAddress);
 
@@ -216,10 +216,10 @@ export class TerraClient {
 
     // The LCD clients must be initiated with a node and chain_id
     const terraClient = new LCDClient({
-      URL: 'http://localhost:1317',
-      chainID: 'localterra',
-      //URL: 'https://tequila-fcd.terra.dev,
-      //chainID: 'tequila-0004'
+      //URL: 'http://localhost:1317',
+      //chainID: 'localterra',
+      URL: 'https://tequila-fcd.terra.dev',
+      chainID: 'tequila-0004',
       gasPrices: '0.15uluna',
       gasAdjustment: 1.2,
     });

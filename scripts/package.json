@@ -12,7 +12,7 @@
     "test": "mocha"
   },
   "dependencies": {
-    "@terra-money/terra.js": "^0.4.13",
+    "@terra-money/terra.js": "0.4.12",
     "@types/crypto-js": "^3.1.43",
     "@types/elliptic": "^6.4.10",
     "@types/lowdb": "^1.0.9",
