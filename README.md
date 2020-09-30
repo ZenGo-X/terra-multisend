@@ -84,7 +84,7 @@ Do not use these addresses in production
 
 ## Misc
 
-[Publishing](./Publishing.md) contains useful information on how to publish your the
+[Publishing](./Publishing.md) contains useful information on how to publish your
 contract, once you are ready to deploy it on a running blockchain.
 [Importing](./Importing.md) contains information about pulling in other contracts or crates
 that have been published.
